@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Player } from "@remotion/player";
 import { MyVideoComposition } from "./components/MyVideoComposition";
 
@@ -6,11 +6,9 @@ const fps = 30; // Frames per second
 
 const App = () => {
   const [videos, setVideos] = useState([]); // Array to hold all uploaded videos
-  const [audioUrl, setAudioUrl] = useState(null); // State to store the audio URL
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false); // State to manage audio playback
   const [previewIndex, setPreviewIndex] = useState(null); // Index to track which video is in preview mode
+  const [audioPlaying, setAudioPlaying] = useState(false); // State to manage audio playing
 
-  // Handle video upload
   const handleUpload = (e) => {
     const files = e.target.files;
     const newVideos = [];
@@ -28,32 +26,6 @@ const App = () => {
     setVideos((prevVideos) => [...prevVideos, ...newVideos]);
   };
 
-  // Extract Audio from Video File
-  const extractAudio = (videoUrl) => {
-    // Create a new audio element to extract audio
-    const audioElement = new Audio(videoUrl);
-    audioElement.crossOrigin = "anonymous"; // Allow cross-origin loading
-
-    // Set up an event listener to extract audio when the video is ready to play
-    audioElement.oncanplay = () => {
-      // Set the audio URL for playback
-      setAudioUrl(videoUrl);
-    };
-  };
-
-  // Toggle audio playback
-  const toggleAudioPlayback = () => {
-    const audioElement = new Audio(audioUrl); // Create a new audio element with the audio URL
-
-    if (isAudioPlaying) {
-      audioElement.pause(); // Pause the audio
-    } else {
-      audioElement.play(); // Play the audio
-    }
-
-    setIsAudioPlaying(!isAudioPlaying);
-  };
-
   const updateDuration = (index, duration) => {
     setVideos((prevVideos) =>
       prevVideos.map((video, i) =>
@@ -69,6 +41,25 @@ const App = () => {
   const handlePreviewToggle = (index) => {
     setPreviewIndex(previewIndex === index ? null : index);
   };
+
+  const toggleAudioPlayback = () => {
+    setAudioPlaying(!audioPlaying);
+  };
+
+  useEffect(() => {
+    // Audio control logic: if audio is playing, resume playback
+    if (audioPlaying) {
+      const audioElement = document.querySelector("audio");
+      if (audioElement) {
+        audioElement.play();
+      }
+    } else {
+      const audioElement = document.querySelector("audio");
+      if (audioElement) {
+        audioElement.pause();
+      }
+    }
+  }, [audioPlaying]);
 
   return (
     <div style={{ padding: 20 }}>
@@ -236,18 +227,6 @@ const App = () => {
                   : "Preview Trimmed Video"}
               </button>
 
-              {/* Extract Audio Button */}
-              <button onClick={() => extractAudio(video.url)}>
-                Extract Audio
-              </button>
-
-              {/* Play or Pause Audio Button */}
-              {audioUrl && (
-                <button onClick={toggleAudioPlayback}>
-                  {isAudioPlaying ? "Pause Audio" : "Play Audio"}
-                </button>
-              )}
-
               {/* Show the correct video based on the preview state */}
               {previewIndex === index ? (
                 <Player
@@ -278,6 +257,12 @@ const App = () => {
                   }}
                 />
               )}
+
+              {/* Audio control button */}
+              <button onClick={toggleAudioPlayback}>
+                {audioPlaying ? "Pause Audio" : "Play Audio"}
+              </button>
+              <audio src={video.url} loop />
             </div>
           </div>
         );
